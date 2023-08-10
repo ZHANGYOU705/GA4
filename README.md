@@ -24,8 +24,10 @@ source zhangyouVenv/bin/activate
 ~~~
 ## 安装依赖
 ~~~
-pip install google-analytics-data
-pip install pandas
+pip3 install google-analytics-data
+~~~
+~~~
+pip3 install pandas
 ~~~
 ## 运行
 ~~~
