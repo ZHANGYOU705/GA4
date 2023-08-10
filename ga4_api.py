@@ -1,6 +1,12 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import datetime
 import os
+import sys
+
 import pandas as pd
 import itertools
+
 from google.analytics.data_v1beta import BetaAnalyticsDataClient
 from google.analytics.data_v1beta.types import (
     DateRange,
@@ -8,25 +14,6 @@ from google.analytics.data_v1beta.types import (
     Metric,
     RunReportRequest,
 )
-
-starting_date = "2023-08-01"
-ending_date = "2023-08-07"
-property_id = "401635008"
-os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'zhangyou_ga4.json'
-
-request_api = RunReportRequest(
-    property=f"properties/{property_id}",
-    dimensions=[
-        Dimension(name="date")
-    ],
-    metrics=[
-        Metric(name="totalUsers")
-    ],
-    date_ranges=[DateRange(start_date=starting_date, end_date=ending_date)],
-)
-client = BetaAnalyticsDataClient()
-response = client.run_report(request_api)
-print(response)
 
 
 def query_data(api_response):
@@ -49,7 +36,43 @@ def query_data(api_response):
     return df
 
 
-final_data = query_data(response)
-print(final_data)
+company_properties = {
+    1001: "401635008",
+    1002: "521636172",
+}
 
-final_data.to_csv('file.csv', index=False)
+if __name__ == '__main__':
+
+    if len(sys.argv) < 3:
+        ending_date = datetime.datetime.now().strftime('%Y-%m-%d')
+        starting_date = (
+                datetime.datetime.strptime(ending_date, '%Y-%m-%d') - datetime.timedelta(
+            days=1)).strftime('%Y-%m-%d')
+    else:
+        starting_date = sys.argv[1]
+        ending_date = sys.argv[2]
+
+    os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = 'zhangyou_ga4.json'
+    for company, property_id in company_properties.items():
+        try:
+            request_api = RunReportRequest(
+                property=f"properties/{property_id}",
+                dimensions=[
+                    Dimension(name="date")
+                ],
+                metrics=[
+                    Metric(name="totalUsers"),
+                    Metric(name="transactions")
+                ],
+                date_ranges=[DateRange(start_date=starting_date, end_date=ending_date)],
+            )
+            client = BetaAnalyticsDataClient()
+            response = client.run_report(request_api, timeout=60)
+
+            result_data = query_data(response)
+
+            print(f"Report for Company {company}:\n")
+            print(result_data)
+            print()
+        except Exception as e:
+            print(f"Error processing data for Company {company}: {str(e)}")
